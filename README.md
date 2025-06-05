@@ -1,16 +1,11 @@
-# Telegram 2FA Bot with QR (via API)
+# Telegram 2FA Bot with Google QR & Inline Buttons
 
-✅ Features:
-- Send QR code image
-- Decodes using `https://api.qrserver.com/v1/read-qr-code/`
-- Extracts secret from URL
-- /code command returns OTP
+## Features:
+- Scan Google Authenticator QR (otpauth://)
+- Extract Secret Key
+- Show OTP from that key
+- Inline buttons for actions
 
-## Deploy via Railway
-
-- Add environment variable:
-  - BOT_TOKEN = <your_bot_token>
-- Set Start Command:
-  - python main.py
-
-✅ No OpenCV or zbar dependency, works cleanly on Railway!
+### Usage:
+- Add `BOT_TOKEN` environment variable
+- Run: `python main.py`
