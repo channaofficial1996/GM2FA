@@ -32,9 +32,16 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             match = re.search(r'secret=([A-Z2-7]{16,})', data, re.IGNORECASE)
             if match:
                 secret = match.group(1).upper()
+
+                # ✅ ចាប់ label/email name ពី otpauth://totp/NAME?secret=...
+                label_match = re.search(r'otpauth://totp/([^?]+)', data)
+                label = label_match.group(1).split(':')[-1] if label_match else "Unknown"
+
                 user_secrets[update.effective_user.id] = secret
+                context.user_data['label'] = label
+
                 await update.message.reply_text(
-                    f"✅ Secret Key detected: `{secret}`",
+                    f"✅ Secret Key detected from: *{label}*\n\n🧾 Your Key: `{secret}`",
                     parse_mode="Markdown",
                     reply_markup=get_keyboard()
                 )
@@ -49,6 +56,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().upper()
     if re.fullmatch(r'[A-Z2-7]{16,}', text):
         user_secrets[update.effective_user.id] = text
+        context.user_data['label'] = "Manual Entry"
         await update.message.reply_text(
             "✅ Secret Key saved. Choose an action below:",
             reply_markup=get_keyboard()
@@ -63,8 +71,12 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "show_secret":
         secret = user_secrets.get(user_id)
+        label = context.user_data.get("label", "Unknown")
         if secret:
-            await query.message.reply_text(f"🧾 Your Secret Key: `{secret}`", parse_mode="Markdown")
+            await query.message.reply_text(
+                f"Secret Key From Mail: *{label}*\n🧾 Your Key: `{secret}`",
+                parse_mode="Markdown"
+            )
         else:
             await query.message.reply_text("⚠️ No Secret Key found.")
     elif query.data == "show_otp":
@@ -75,7 +87,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.message.reply_text("⚠️ No Secret Key found. Please send one first.")
 
-# ✅ Hardcoded new token — be careful!
+# ✅ Bot Token (Replace with your own)
 BOT_TOKEN = "8042421392:AAHMz2z5EJxenhDryF3rAVmMwWN58BbSljs"
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
