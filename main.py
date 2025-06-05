@@ -36,12 +36,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 secret = match.group(1)
                 label = label_match.group(1) if label_match else "Unknown Account"
                 user_secrets[update.effective_user.id] = secret
-                await update.message.reply_text(
+                message = (
                     f"✅ Secret Key detected from: *{label}*
 "
-                    f"🧾 Secret Key: `{secret}`",
-                    parse_mode="Markdown"
+                    f"🧾 Secret Key: `{secret}`"
                 )
+                await update.message.reply_text(message, parse_mode="Markdown")
             else:
                 await update.message.reply_text("❌ No Secret Key found in QR.")
         else:
