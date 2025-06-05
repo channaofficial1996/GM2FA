@@ -50,7 +50,7 @@ async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🔐 OTP៖ `{otp.now()}`", parse_mode="Markdown")
 
 import os
-BOT_TOKEN = "8042421392:AAHMz2z5EJxenhDryF3rAVmMwWN58BbSljs"  # <-- FIXED HERE
+BOT_TOKEN = os.environ.get("8042421392:AAHMz2z5EJxenhDryF3rAVmMwWN58BbSljs")
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
