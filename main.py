@@ -2,10 +2,38 @@ import pyotp
 import requests
 import re
 import os
+import urllib.parse
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
 user_secrets = {}
+
+# ✅ Service classifier
+def detect_service(label: str) -> str:
+    label_lower = label.lower()
+    if 'facebook' in label_lower or 'fb' in label_lower:
+        return "FB 2FA"
+    elif 'gmail' in label_lower or 'google' in label_lower:
+        return "Gmail 2FA"
+    elif 'yandex' in label_lower:
+        return "Yandex 2FA"
+    elif 'hotmail' in label_lower or 'outlook' in label_lower or 'microsoft' in label_lower:
+        return "Hotmail 2FA"
+    else:
+        return "Other 2FA"
+
+# ✅ Service buttons UI
+def get_service_buttons():
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🟦 FB 2FA", callback_data="fb_2fa"),
+            InlineKeyboardButton("🟥 Gmail 2FA", callback_data="gmail_2fa"),
+        ],
+        [
+            InlineKeyboardButton("🟨 Yandex 2FA", callback_data="yandex_2fa"),
+            InlineKeyboardButton("🟪 Hotmail 2FA", callback_data="hotmail_2fa"),
+        ]
+    ])
 
 def get_keyboard():
     return InlineKeyboardMarkup([
@@ -33,17 +61,23 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if match:
                 secret = match.group(1).upper()
 
-                # ✅ ចាប់ label/email name ពី otpauth://totp/NAME?secret=...
                 label_match = re.search(r'otpauth://totp/([^?]+)', data)
-                label = label_match.group(1).split(':')[-1] if label_match else "Unknown"
+                raw_label = label_match.group(1).split(':')[-1] if label_match else "Unknown"
+                label = urllib.parse.unquote(raw_label)
+                service = detect_service(label)
 
                 user_secrets[update.effective_user.id] = secret
                 context.user_data['label'] = label
+                context.user_data['service'] = service
 
                 await update.message.reply_text(
-                    f"✅ Secret Key detected from: *{label}*\n\n🧾 Your Key: `{secret}`",
-                    parse_mode="Markdown",
-                    reply_markup=get_keyboard()
+                    f"✅ {service} for: *{label}*\n\n🧾 Your Key: `{secret}`",
+                    parse_mode="Markdown"
+                )
+
+                await update.message.reply_text(
+                    "👇 Choose a service to get OTP:",
+                    reply_markup=get_service_buttons()
                 )
             else:
                 await update.message.reply_text("❌ No valid Secret Key found in this QR.")
@@ -57,6 +91,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if re.fullmatch(r'[A-Z2-7]{16,}', text):
         user_secrets[update.effective_user.id] = text
         context.user_data['label'] = "Manual Entry"
+        context.user_data['service'] = "Manual 2FA"
         await update.message.reply_text(
             "✅ Secret Key saved. Choose an action below:",
             reply_markup=get_keyboard()
@@ -72,9 +107,10 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "show_secret":
         secret = user_secrets.get(user_id)
         label = context.user_data.get("label", "Unknown")
+        service = context.user_data.get("service", "2FA")
         if secret:
             await query.message.reply_text(
-                f"Secret Key From Mail: *{label}*\n🧾 Your Key: `{secret}`",
+                f"✅ {service} for: *{label}*\n🧾 Your Key: `{secret}`",
                 parse_mode="Markdown"
             )
         else:
@@ -87,7 +123,28 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.message.reply_text("⚠️ No Secret Key found. Please send one first.")
 
-# ✅ Bot Token (Replace with your own)
+async def handle_service_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    secret = user_secrets.get(user_id)
+
+    if not secret:
+        await query.message.reply_text("⚠️ No Secret Key found.")
+        return
+
+    otp = pyotp.TOTP(secret).now()
+
+    if query.data == "fb_2fa":
+        await query.message.reply_text(f"🔐 FB 2FA OTP: `{otp}`", parse_mode="Markdown")
+    elif query.data == "gmail_2fa":
+        await query.message.reply_text(f"🔐 Gmail 2FA OTP: `{otp}`", parse_mode="Markdown")
+    elif query.data == "yandex_2fa":
+        await query.message.reply_text(f"🔐 Yandex 2FA OTP: `{otp}`", parse_mode="Markdown")
+    elif query.data == "hotmail_2fa":
+        await query.message.reply_text(f"🔐 Hotmail 2FA OTP: `{otp}`", parse_mode="Markdown")
+
+# ✅ Replace with your actual token
 BOT_TOKEN = "8042421392:AAHMz2z5EJxenhDryF3rAVmMwWN58BbSljs"
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -95,6 +152,7 @@ app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-app.add_handler(CallbackQueryHandler(handle_button))
+app.add_handler(CallbackQueryHandler(handle_button, pattern="^(show_secret|show_otp)$"))
+app.add_handler(CallbackQueryHandler(handle_service_buttons, pattern="^(fb_2fa|gmail_2fa|yandex_2fa|hotmail_2fa)$"))
 
 app.run_polling()
