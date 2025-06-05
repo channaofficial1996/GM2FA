@@ -75,7 +75,9 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.message.reply_text("⚠️ No Secret Key found. Please send one first.")
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+# ✅ Hardcoded new token — be careful!
+BOT_TOKEN = "8042421392:AAHMz2z5EJxenhDryF3rAVmMwWN58BbSljs"
+
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
