@@ -1,20 +1,16 @@
-# Telegram 2FA Bot with QR (OpenCV)
+# Telegram 2FA Bot with QR (via API)
 
-✅ Supports:
-- QR image scan (using OpenCV)
-- Extracts secret=XXX from URL
-- Generates OTP using /code
-- Deployable on Railway
+✅ Features:
+- Send QR code image
+- Decodes using `https://api.qrserver.com/v1/read-qr-code/`
+- Extracts secret from URL
+- /code command returns OTP
 
-## Run locally:
-```
-pip install -r requirements.txt
-python main.py
-```
+## Deploy via Railway
 
-## Railway:
-- Add `BOT_TOKEN` in Environment
-- Start command:
-```
-python main.py
-```
+- Add environment variable:
+  - BOT_TOKEN = <your_bot_token>
+- Set Start Command:
+  - python main.py
+
+✅ No OpenCV or zbar dependency, works cleanly on Railway!
