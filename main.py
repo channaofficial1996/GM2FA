@@ -145,7 +145,7 @@ async def handle_service_buttons(update: Update, context: ContextTypes.DEFAULT_T
         await query.message.reply_text(f"🔐 Hotmail 2FA OTP: `{otp}`", parse_mode="Markdown")
 
 # ✅ Replace with your actual token
-BOT_TOKEN = "7845423216:AAHE0QIJy9nJ4jhz-xcQURUCQEvnIAgjEdE"
+BOT_TOKEN = "8042421392:AAHMz2z5EJxenhDryF3rAVmMwWN58BbSljs"
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
